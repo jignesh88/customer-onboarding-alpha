@@ -172,7 +172,7 @@ async function generateWelcomeMessage() {
     return responseBody.content[0].text;
   } catch (error) {
     console.error('Error generating welcome message:', error);
-    return 'Welcome to our bank! We're excited to help you open your new account.';
+    return 'Welcome to our bank! We\'re excited to help you open your new account.';
   }
 }
 
