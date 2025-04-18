@@ -1,0 +1,184 @@
+{
+  "Comment": "Customer Onboarding State Machine",
+  "StartAt": "Collect Personal Details",
+  "States": {
+    "Collect Personal Details": {
+      "Type": "Task",
+      "Resource": "${OrchestratorLambdaArn}",
+      "Parameters": {
+        "action": "COLLECT_DETAILS",
+        "process_id.$": "$.process_id"
+      },
+      "Next": "ID Verification"
+    },
+    "ID Verification": {
+      "Type": "Task",
+      "Resource": "${IdVerificationLambdaArn}",
+      "Parameters": {
+        "process_id.$": "$.process_id"
+      },
+      "Next": "ID Verification Check"
+    },
+    "ID Verification Check": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.verification.id_verified",
+          "BooleanEquals": true,
+          "Next": "Biometric Authentication"
+        }
+      ],
+      "Default": "ID Verification Failed"
+    },
+    "ID Verification Failed": {
+      "Type": "Task",
+      "Resource": "${OrchestratorLambdaArn}",
+      "Parameters": {
+        "action": "NOTIFY_FAILURE",
+        "process_id.$": "$.process_id",
+        "reason": "ID verification failed"
+      },
+      "End": true
+    },
+    "Biometric Authentication": {
+      "Type": "Task",
+      "Resource": "${BiometricCheckLambdaArn}",
+      "Parameters": {
+        "process_id.$": "$.process_id"
+      },
+      "Next": "Biometric Check"
+    },
+    "Biometric Check": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.verification.biometric_verified",
+          "BooleanEquals": true,
+          "Next": "Financial Data Verification"
+        }
+      ],
+      "Default": "Biometric Verification Failed"
+    },
+    "Biometric Verification Failed": {
+      "Type": "Task",
+      "Resource": "${OrchestratorLambdaArn}",
+      "Parameters": {
+        "action": "NOTIFY_FAILURE",
+        "process_id.$": "$.process_id",
+        "reason": "Biometric verification failed"
+      },
+      "End": true
+    },
+    "Financial Data Verification": {
+      "Type": "Task",
+      "Resource": "${OrchestratorLambdaArn}",
+      "Parameters": {
+        "action": "FINANCIAL_VERIFICATION",
+        "process_id.$": "$.process_id"
+      },
+      "Next": "Financial Check"
+    },
+    "Financial Check": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.verification.financial_verified",
+          "BooleanEquals": true,
+          "Next": "AML Screening"
+        }
+      ],
+      "Default": "Financial Verification Failed"
+    },
+    "Financial Verification Failed": {
+      "Type": "Task",
+      "Resource": "${OrchestratorLambdaArn}",
+      "Parameters": {
+        "action": "NOTIFY_FAILURE",
+        "process_id.$": "$.process_id",
+        "reason": "Financial verification failed"
+      },
+      "End": true
+    },
+    "AML Screening": {
+      "Type": "Task",
+      "Resource": "${AmlScreeningLambdaArn}",
+      "Parameters": {
+        "process_id.$": "$.process_id"
+      },
+      "Next": "AML Check"
+    },
+    "AML Check": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.verification.aml_passed",
+          "BooleanEquals": true,
+          "Next": "Account Creation"
+        },
+        {
+          "Variable": "$.verification.manual_review_required",
+          "BooleanEquals": true,
+          "Next": "Manual Review"
+        }
+      ],
+      "Default": "AML Screening Failed"
+    },
+    "AML Screening Failed": {
+      "Type": "Task",
+      "Resource": "${OrchestratorLambdaArn}",
+      "Parameters": {
+        "action": "NOTIFY_FAILURE",
+        "process_id.$": "$.process_id",
+        "reason": "AML screening failed"
+      },
+      "End": true
+    },
+    "Manual Review": {
+      "Type": "Task",
+      "Resource": "${OrchestratorLambdaArn}",
+      "Parameters": {
+        "action": "MANUAL_REVIEW",
+        "process_id.$": "$.process_id"
+      },
+      "End": true
+    },
+    "Account Creation": {
+      "Type": "Task",
+      "Resource": "${AccountCreationLambdaArn}",
+      "Parameters": {
+        "process_id.$": "$.process_id"
+      },
+      "Next": "Account Creation Check"
+    },
+    "Account Creation Check": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.account.created",
+          "BooleanEquals": true,
+          "Next": "Onboarding Complete"
+        }
+      ],
+      "Default": "Account Creation Failed"
+    },
+    "Account Creation Failed": {
+      "Type": "Task",
+      "Resource": "${OrchestratorLambdaArn}",
+      "Parameters": {
+        "action": "NOTIFY_FAILURE",
+        "process_id.$": "$.process_id",
+        "reason": "Account creation failed"
+      },
+      "End": true
+    },
+    "Onboarding Complete": {
+      "Type": "Task",
+      "Resource": "${OrchestratorLambdaArn}",
+      "Parameters": {
+        "action": "COMPLETE_ONBOARDING",
+        "process_id.$": "$.process_id"
+      },
+      "End": true
+    }
+  }
+}
